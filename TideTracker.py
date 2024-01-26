@@ -20,6 +20,7 @@ import noaa_coops as nc
 import matplotlib.pyplot as plt
 import numpy as np
 import datetime as dt
+import config
 
 sys.path.append('lib')
 from waveshare_epd import epd7in5_V2
@@ -38,20 +39,20 @@ Location specific info required
 '''
 
 # Optional, displayed on top left
-LOCATION = ''
+LOCATION = config.location
 # NOAA Station Code for tide data
-StationID = #######
+StationID = config.station_id
 
 # For weather data
 # Create Account on openweathermap.com and get API key
-API_KEY = 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
+API_KEY = config.api_key
 # Get LATITUDE and LONGITUDE of location
-LATITUDE = 'XX.XXXXXX'
-LONGITUDE = '-XX.XXXXXX'
-UNITS = 'imperial'
+LATITUDE = config.latitude
+LONGITUDE = config.longitude
+UNITS = config.units
 
 # Create URL for API call
-BASE_URL = 'http://api.openweathermap.org/data/2.5/onecall?'
+BASE_URL = 'https://api.openweathermap.org/data/3.0/onecall?'
 URL = BASE_URL + 'lat=' + LATITUDE + '&lon=' + LONGITUDE + '&units=' + UNITS +'&appid=' + API_KEY
 
 
@@ -90,7 +91,7 @@ def display_error(error_source):
     draw = ImageDraw.Draw(error_image)
     draw.text((100, 150), error_source +' ERROR', font=font50, fill=black)
     draw.text((100, 300), 'Retrying in 30 seconds', font=font22, fill=black)
-    current_time = datetime.now().strftime('%H:%M')
+    current_time = dt.datetime.now().strftime('%H:%M')
     draw.text((300, 365), 'Last Refresh: ' + str(current_time), font = font50, fill=black)
     # Save the error image
     error_image_file = 'error.png'
@@ -259,15 +260,16 @@ while True:
     temp_max = daily_temp['max']
     temp_min = daily_temp['min']
 
+    # Fixme: parametrize temperature unit
     # Set strings to be printed to screen
     string_location = LOCATION
-    string_temp_current = format(temp_current, '.0f') + u'\N{DEGREE SIGN}F'
-    string_feels_like = 'Feels like: ' + format(feels_like, '.0f') +  u'\N{DEGREE SIGN}F'
+    string_temp_current = format(temp_current, '.0f') + u'\N{DEGREE SIGN}C'
+    string_feels_like = 'Feels like: ' + format(feels_like, '.0f') +  u'\N{DEGREE SIGN}C'
     string_humidity = 'Humidity: ' + str(humidity) + '%'
     string_wind = 'Wind: ' + format(wind, '.1f') + ' MPH'
     string_report = 'Now: ' + report.title()
-    string_temp_max = 'High: ' + format(temp_max, '>.0f') + u'\N{DEGREE SIGN}F'
-    string_temp_min = 'Low:  ' + format(temp_min, '>.0f') + u'\N{DEGREE SIGN}F'
+    string_temp_max = 'High: ' + format(temp_max, '>.0f') + u'\N{DEGREE SIGN}C'
+    string_temp_min = 'Low:  ' + format(temp_min, '>.0f') + u'\N{DEGREE SIGN}C'
     string_precip_percent = 'Precip: ' + str(format(daily_precip_percent, '.0f'))  + '%'
 
     # get min and max temp
@@ -289,15 +291,15 @@ while True:
     nx_nx_daily_precip_percent = nx_nx_daily_precip_float * 100
 
     # Tomorrow Forcast Strings
-    nx_day_high = 'High: ' + format(nx_temp_max, '>.0f') + u'\N{DEGREE SIGN}F'
-    nx_day_low = 'Low: ' + format(nx_temp_min, '>.0f') + u'\N{DEGREE SIGN}F'
+    nx_day_high = 'High: ' + format(nx_temp_max, '>.0f') + u'\N{DEGREE SIGN}C'
+    nx_day_low = 'Low: ' + format(nx_temp_min, '>.0f') + u'\N{DEGREE SIGN}C'
     nx_precip_percent = 'Precip: ' + str(format(nx_daily_precip_percent, '.0f'))  + '%'
     nx_weather_icon = daily[1]['weather']
     nx_icon = nx_weather_icon[0]['icon']
 
     # Overmorrow Forcast Strings
-    nx_nx_day_high = 'High: ' + format(nx_nx_temp_max, '>.0f') + u'\N{DEGREE SIGN}F'
-    nx_nx_day_low = 'Low: ' + format(nx_nx_temp_min, '>.0f') + u'\N{DEGREE SIGN}F'
+    nx_nx_day_high = 'High: ' + format(nx_nx_temp_max, '>.0f') + u'\N{DEGREE SIGN}C'
+    nx_nx_day_low = 'Low: ' + format(nx_nx_temp_min, '>.0f') + u'\N{DEGREE SIGN}C'
     nx_nx_precip_percent = 'Precip: ' + str(format(nx_nx_daily_precip_percent, '.0f'))  + '%'
     nx_nx_weather_icon = daily[2]['weather']
     nx_nx_icon = nx_nx_weather_icon[0]['icon']
@@ -307,17 +309,18 @@ while True:
     current_time = now.strftime("%H:%M")
     last_update_string = 'Last Updated: ' + current_time
 
+    # Fixme: noaa_coop doesn't work for Ireland, need to find alternative
     # Tide Data
     # Get water level
-    wl_error = True
-    while wl_error == True:
-        try:
-            WaterLevel = past24(StationID)
-            wl_error = False
-        except:
-            display_error('Tide Data')
+    # wl_error = True
+    # while wl_error == True:
+    #     try:
+    #         WaterLevel = past24(StationID)
+    #         wl_error = False
+    #     except:
+    #         display_error('Tide Data')
 
-    plotTide(WaterLevel)
+    # plotTide(WaterLevel)
 
 
     # Open template file
@@ -334,13 +337,15 @@ while True:
 
     draw.text((125,10), LOCATION, font=font35, fill=black)
 
-    # Center current weather report
-    w, h = draw.textsize(string_report, font=font20)
-    #print(w)
-    if w > 250:
-        string_report = 'Now:\n' + report.title()
+    # Fixme: new version of epdconfig doesn't have .textsize() ?
+    # # Center current weather report
+    # w, h = draw.textsize(string_report, font=font20)
+    # #print(w)
+    # if w > 250:
+    #     string_report = 'Now:\n' + report.title()
 
-    center = int(120-(w/2))
+    # center = int(120-(w/2))
+    center = int(10)
     draw.text((center,175), string_report, font=font20, fill=black)
 
     # Data
@@ -394,30 +399,30 @@ while True:
     draw.text((30,260), "Today's Tide", font=font22, fill=black)
 
     # Get tide time predictions
-    hilo_error = True
-    while hilo_error == True:
-        try:
-            hilo_daily = HiLo(StationID)
-            hilo_error = False
-        except:
-            display_error('Tide Prediction')
+    # hilo_error = True
+    # while hilo_error == True:
+    #     try:
+    #         hilo_daily = HiLo(StationID)
+    #         hilo_error = False
+    #     except:
+    #         display_error('Tide Prediction')
 
-    # Display tide preditions
-    y_loc = 300 # starting location of list
-    # Iterate over preditions
-    for index, row in hilo_daily.iterrows():
-        # For high tide
-        if row['hi_lo'] == 'H':
-            tide_time = index.strftime("%H:%M")
-            tidestr = "High: " + tide_time
-        # For low tide
-        elif row['hi_lo'] == 'L':
-            tide_time = index.strftime("%H:%M")
-            tidestr = "Low:  " + tide_time
+    # # Display tide preditions
+    # y_loc = 300 # starting location of list
+    # # Iterate over preditions
+    # for index, row in hilo_daily.iterrows():
+    #     # For high tide
+    #     if row['hi_lo'] == 'H':
+    #         tide_time = index.strftime("%H:%M")
+    #         tidestr = "High: " + tide_time
+    #     # For low tide
+    #     elif row['hi_lo'] == 'L':
+    #         tide_time = index.strftime("%H:%M")
+    #         tidestr = "Low:  " + tide_time
 
-        # Draw to display image
-        draw.text((40,y_loc), tidestr, font=font15, fill=black)
-        y_loc += 25 # This bumps the next prediction down a line
+    #     # Draw to display image
+    #     draw.text((40,y_loc), tidestr, font=font15, fill=black)
+    #     y_loc += 25 # This bumps the next prediction down a line
 
 
     # Save the image for display as PNG
